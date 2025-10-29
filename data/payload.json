@@ -1,0 +1,189 @@
+{
+  "class_title": 5,
+  "board_title": "CBSE",
+  "chapter_title": "Chapter 7: Temperature & its Measurement",
+  "module_title": "TEMPERATURE AND THERMOMETER",
+  "lessons": [
+    {
+      "lesson_title": "Hot & Cold",
+      "concepts": [
+        {
+          "type": "statement",
+          "text": "Fridge water is cold.",
+          "images": []
+        },
+        {
+          "type": "multiple-choice",
+          "question": "Fridge water is _____.",
+          "answer": "cold",
+          "options": [
+            "cold",
+            "hot"
+          ],
+          "images": []
+        },
+        {
+          "type": "statement",
+          "text": "Tea is hot.",
+          "images": []
+        },
+        {
+          "type": "multiple-choice",
+          "question": "Tea is _____.",
+          "answer": "hot",
+          "options": [
+            "hot",
+            "cold"
+          ],
+          "images": []
+        },
+        {
+          "type": "statement",
+          "text": "Tap water is not hot and not cold.",
+          "images": []
+        },
+        {
+          "type": "multiple-choice",
+          "question": "Tap water is not hot and not _____.",
+          "answer": "cold",
+          "options": [
+            "cold",
+            "hot"
+          ],
+          "images": []
+        },
+        {
+          "type": "multiple-choice",
+          "question": "Tap water is not _____ and not cold.",
+          "answer": "hot",
+          "options": [
+            "hot",
+            "cold"
+          ],
+          "images": []
+        },
+        {
+          "type": "statement",
+          "text": "Tap water is not neither hot and not cold.",
+          "images": []
+        },
+        {
+          "type": "multiple-choice",
+          "question": "Tap water is _____ hot nor cold.",
+          "answer": "neither",
+          "options": [
+            "neither",
+            "either"
+          ],
+          "images": []
+        },
+        {
+          "type": "statement",
+          "text": "Tap water is neither hot and not nor cold.",
+          "images": []
+        },
+        {
+          "type": "multiple-choice",
+          "question": "Tap water is neither hot _____ cold.",
+          "answer": "nor",
+          "options": [
+            "nor",
+            "or"
+          ],
+          "images": []
+        },
+        {
+          "type": "statement",
+          "text": "Tap water is neither hot nor cold.",
+          "images": []
+        },
+        {
+          "type": "statement",
+          "text": "Fridge water is cold. Tea is hot. Tap water is neither hot nor cold.",
+          "images": []
+        },
+        {
+          "type": "rearrange",
+          "question": "Fridge water is ____. Tea is ____. Tap water is _____.",
+          "answer": "cold hot neither hot nor cold",
+          "options": [
+            "neither hot nor cold",
+            "hot",
+            "cold"
+          ],
+          "images": []
+        },
+        {
+          "type": "statement",
+          "text": "Fridge water is cooler than tap water.",
+          "images": []
+        },
+        {
+          "type": "multiple-choice",
+          "question": "Fridge water is _____ than tap water.",
+          "answer": "cooler",
+          "options": [
+            "cooler",
+            "hotter"
+          ],
+          "images": []
+        },
+        {
+          "type": "statement",
+          "text": "Tea is hotter than tap water.",
+          "images": []
+        },
+        {
+          "type": "multiple-choice",
+          "question": "Tea is _____ than tap water.",
+          "answer": "hotter",
+          "options": [
+            "hotter",
+            "cooler"
+          ],
+          "images": []
+        },
+        {
+          "type": "multiple-choice",
+          "question": "Fridge water is _____ than tea.",
+          "answer": "cooler",
+          "options": [
+            "cooler",
+            "hotter"
+          ],
+          "images": []
+        },
+        {
+          "type": "multiple-choice",
+          "question": "Tap water is _____ than tea.",
+          "answer": "cooler",
+          "options": [
+            "cooler",
+            "hotter"
+          ],
+          "images": []
+        },
+        {
+          "type": "multiple-choice",
+          "question": "Tea is _____ than fridge water.",
+          "answer": "hotter",
+          "options": [
+            "cooler",
+            "hotter"
+          ],
+          "images": []
+        },
+        {
+          "type": "multiple-choice",
+          "question": "Tap water is _____ than fridge water.",
+          "answer": "hotter",
+          "options": [
+            "cooler",
+            "hotter"
+          ],
+          "images": []
+        }
+      ]
+    }
+  ]
+}
