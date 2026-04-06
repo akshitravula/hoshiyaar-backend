@@ -1,0 +1,6 @@
+Fixed 2 items this run.
+Total comics: 2
+False statements: 0
+First False Stmt: None
+First Comic: {"_id":"69d36e147a21784d5d0ae519","moduleId":"68e276236d69ef07c1a2e133","order":1,"type":"comic","options":[],"words":[],"imageUrl":"https://res.cloudinary.com/dcxlzfyfp/image/upload/v1775463925/hoshiyaar/luohedcq4xf4kmkrgzaz.png","images":[],"imagePublicIds":[],"createdAt":"2026-04-06T08:25:56.506Z","updatedAt":"2026-04-06T08:51:58.719Z","__v":0}
+Are there any comics?: true

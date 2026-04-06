@@ -3,7 +3,7 @@ import { config } from 'dotenv';
 import cors from 'cors';
 import connectDB from './config/db.js';
 import authRoutes from './routes/auth.js';
-import lessonRoutes from './routes/lessonRoutes.js'; // 👈 ADD THIS LINE
+import lessonRoutes from './routes/lessonRoutes.js';
 import curriculumRoutes from './routes/curriculum.js';
 import { v2 as cloudinary } from 'cloudinary';
 import uploadRoutes from './routes/upload.js';
@@ -30,82 +30,150 @@ connectDB();
 
 const app = express();
 
-// CORS configuration
+// ============================================
+// CORS CONFIGURATION - UPDATED WITH VERCEL
+// ============================================
 const corsOptions = {
-  origin: [
-    'https://www.hoshiyaar.info', // <<< --- ADD THIS (Your primary production frontend)
-    'https://hoshiyaar.info',
-    'http://localhost:5173', // Vite dev server
-    'http://localhost:3000', // Alternative dev port
-    'http://192.168.1.11:3000', // Mobile access from local network
-    'http://192.168.1.11:5173', // Mobile access for dev server
-    'https://hoshiyaar-frontend-1.onrender.com', // Production frontend URL (if deployed)
-    
-    // Add your production frontend URL here when you deploy it
-  ],
-  credentials: true, // Allow cookies and authorization headers
+  origin: function (origin, callback) {
+    const allowedOrigins = [
+      // Production domains
+      'https://www.hoshiyaar.info',
+      'https://hoshiyaar.info',
+      'https://hoshiyaar-frontend.vercel.app',
+      'https://hoshiyaar-frontend-1.onrender.com',
+      
+      // Local development
+      'http://localhost:5174',
+      'http://localhost:5173',
+      'http://localhost:3000',
+      'http://192.168.1.11:3000',
+      'http://192.168.1.11:5173',
+      
+      // Environment variable (for flexibility)
+      process.env.FRONTEND_URL
+    ].filter(Boolean);
+
+    // Allow requests with no origin (mobile apps, Postman, curl)
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    // Allow ALL Vercel preview deployments (*.vercel.app)
+    if (origin.includes('vercel.app')) {
+      return callback(null, true);
+    }
+
+    // Allow defined origins
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    // Log blocked origins for debugging
+    console.error(`❌ CORS blocked origin: ${origin}`);
+    return callback(new Error('Not allowed by CORS'), false);
+  },
+  credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  optionsSuccessStatus: 200 // Some legacy browsers choke on 204
+  optionsSuccessStatus: 200
 };
 
 // Middleware
-app.use(cors(corsOptions)); // Enable Cross-Origin Resource Sharing with specific options
-app.use(json({ limit: '50mb' })); // Allow the server to accept JSON in the request body (increase limit)
-app.use(express.urlencoded({ extended: true, limit: '50mb' })); // For form data
+app.use(cors(corsOptions));
+app.use(json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+// Request logging (helpful for debugging)
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.path} - Origin: ${req.get('origin') || 'none'}`);
+  next();
+});
 
 // Define a simple route for the root URL
 app.get('/', (req, res) => {
-  res.send('API is running...');
+  res.json({
+    message: 'Hoshiyaar API is running...',
+    status: 'OK',
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'OK' });
 });
 
 // --- Mount Routers ---
-// Use the auth routes for any requests to /api/auth
 app.use('/api/auth', authRoutes);
-
-// Use the lesson routes for any requests to /api/lessons
-app.use('/api/lessons', lessonRoutes); // 👈 ADD THIS LINE
-
-// Curriculum hierarchical routes
+app.use('/api/lessons', lessonRoutes);
 app.use('/api/curriculum', curriculumRoutes);
-
 
 // Upload routes with extended timeout for large file uploads
 app.use('/api/upload', (req, res, next) => {
-  req.setTimeout(600000); // 10 minutes timeout for uploads
+  req.setTimeout(600000);
   res.setTimeout(600000);
   next();
 }, uploadRoutes);
 
 // Review routes
 app.use('/api/review', reviewRoutes);
+
 // Points routes
 app.use('/api/points', pointsRoutes);
 
+// ============================================
+// ERROR HANDLING
+// ============================================
 
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({
+    error: 'Route not found',
+    path: req.path,
+    method: req.method
+  });
+});
+
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error('Global error:', err);
+
+  if (err.message === 'Not allowed by CORS') {
+    return res.status(403).json({
+      error: 'CORS Error',
+      message: 'Origin not allowed',
+      origin: req.get('origin')
+    });
+  }
+
+  res.status(err.status || 500).json({
+    error: err.message || 'Internal Server Error'
+  });
+});
+
+// ============================================
+// START SERVER
+// ============================================
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`Backend accessible from mobile: http://192.168.1.11:${PORT}`);
+  console.log('='.repeat(50));
+  console.log(`✅ Server running on port ${PORT}`);
+  console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🌐 CORS: Allowing all *.vercel.app domains`);
+  console.log(`🔗 Backend accessible from mobile: http://192.168.1.11:${PORT}`);
+  console.log('='.repeat(50));
 });
-// One-time index migration: drop deprecated unique index on subjects (boardId_1_name_1)
-// and ensure the new compound index (boardId, classId, name). Safe to run on every boot.
+
+// One-time index migration
 (async () => {
   try {
-    // Sync declared indexes (creates boardId_1_classId_1_name_1 if missing)
     await Subject.syncIndexes();
-    // Attempt to drop the old index; ignore if it doesn't exist
     try { await Subject.collection.dropIndex('boardId_1_name_1'); } catch (e) { /* ignore */ }
-    // Ensure class-level unique index and no legacy global index remains
     await ClassLevel.syncIndexes();
-
-    // --- User index migration ---
-    // Ensure the model's current indexes are applied (email should NOT be unique)
     await User.syncIndexes();
-    // Drop any legacy unique index on email that may still exist in DB
     try { await User.collection.dropIndex('email_1'); } catch (e) { /* ignore if missing */ }
   } catch (e) {
-    console.warn('Index migration for Subject failed:', e.message);
+    console.warn('Index migration failed:', e.message);
   }
 })();

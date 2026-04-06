@@ -12,7 +12,7 @@ const lessonItemSchema = new Schema({
 //   },
   type: {
     type: String,
-    enum: ['concept', 'statement', 'fill-in-the-blank', 'multiple-choice', 'rearrange'],
+    enum: ['concept', 'statement', 'fill-in-the-blank', 'multiple-choice', 'rearrange', 'comic'],
     required: true,
   },
   title: String,
