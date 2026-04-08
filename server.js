@@ -41,6 +41,9 @@ const corsOptions = {
       'https://hoshiyaar.info',
       'https://hoshiyaar-frontend.vercel.app',
       'https://hoshiyaar-frontend-1.onrender.com',
+        'http://localhost',       
+    'capacitor://localhost',  
+ 
       
       // Local development
       'http://localhost:5174',
