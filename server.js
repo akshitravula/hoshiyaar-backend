@@ -29,7 +29,15 @@ if (process.env.CLOUDINARY_CLOUD_NAME) {
 connectDB();
 
 const app = express();
-
+// In your Railway Backend Code:
+app.use(cors({
+  origin: [
+    'https://localhost', 
+    'http://localhost', 
+    'capacitor://localhost'
+  ],
+  credentials: true
+}));
 // ============================================
 // CORS CONFIGURATION - UPDATED WITH VERCEL
 // ============================================
