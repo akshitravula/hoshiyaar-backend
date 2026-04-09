@@ -29,15 +29,7 @@ if (process.env.CLOUDINARY_CLOUD_NAME) {
 connectDB();
 
 const app = express();
-// In your Railway Backend Code:
-app.use(cors({
-  origin: [
-    'https://localhost', 
-    'http://localhost', 
-    'capacitor://localhost'
-  ],
-  credentials: true
-}));
+
 // ============================================
 // CORS CONFIGURATION - UPDATED WITH VERCEL
 // ============================================
@@ -49,17 +41,17 @@ const corsOptions = {
       'https://hoshiyaar.info',
       'https://hoshiyaar-frontend.vercel.app',
       'https://hoshiyaar-frontend-1.onrender.com',
-        'http://localhost',       
-    'capacitor://localhost',  
- 
-      
+      'http://localhost',        // Required for Capacitor Android (HTTP)
+      'https://localhost',       // Required for Capacitor Android (HTTPS)
+      'capacitor://localhost',  // Required for Capacitor iOS
+      'https://hoshiyaar-backend-production.up.railway.app', // Backend its own domain
+
       // Local development
-      'http://localhost:5174',
       'http://localhost:5173',
       'http://localhost:3000',
       'http://192.168.1.11:3000',
       'http://192.168.1.11:5173',
-      
+
       // Environment variable (for flexibility)
       process.env.FRONTEND_URL
     ].filter(Boolean);
