@@ -3,6 +3,7 @@ import Board from '../models/Board.js';
 import ClassLevel from '../models/ClassLevel.js';
 import Subject from '../models/Subject.js';
 import Chapter from '../models/Chapter.js';
+import Module from '../models/Module.js';
 import jwt from 'jsonwebtoken';
 
 // Helper function to generate a JWT
@@ -104,6 +105,36 @@ export const registerUser = async (req, res) => {
       });
     } else {
       res.status(400).json({ message: 'Invalid user data' });
+    }
+  } catch (error) {
+    res.status(500).json({ message: `Server Error: ${error.message}` });
+  }
+};
+
+// @desc    Register an anonymous guest user
+// @route   POST /api/auth/register-guest
+// @access  Public
+export const registerGuest = async (req, res) => {
+  try {
+    const guestId = `guest_${Math.random().toString(36).substring(2, 9)}`;
+    const user = await User.create({
+      username: guestId,
+      name: 'Learner',
+      isGuest: true,
+      onboardingCompleted: false,
+    });
+
+    if (user) {
+      res.status(201).json({
+        _id: user._id,
+        username: user.username,
+        name: user.name,
+        isGuest: user.isGuest,
+        onboardingCompleted: user.onboardingCompleted,
+        token: generateToken(user._id),
+      });
+    } else {
+      res.status(400).json({ message: 'Invalid guest data' });
     }
   } catch (error) {
     res.status(500).json({ message: `Server Error: ${error.message}` });

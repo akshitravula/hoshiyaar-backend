@@ -1,11 +1,19 @@
 import express from 'express';
 // Corrected the import to use named imports directly
-import { registerUser, loginUser, updateOnboarding, getUser, getProgress, updateProgress, checkUsername, verifyStorage, getModuleProgress, getCompletedModules } from '../controllers/authController.js';
+import { registerUser, registerGuest, loginUser, updateOnboarding, getUser, getProgress, updateProgress, checkUsername, verifyStorage, getModuleProgress, getCompletedModules } from '../controllers/authController.js';
 
 const router = express.Router();
 
+// Root route for auth API health check
+router.get('/', (req, res) => {
+  res.json({ status: 'Auth API is running' });
+});
+
 // Route for user registration
 router.post('/register', registerUser);
+
+// Route for anonymous guest registration
+router.post('/register-guest', registerGuest);
 
 // Route for user login
 router.post('/login', loginUser);

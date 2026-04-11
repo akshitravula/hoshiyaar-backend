@@ -29,7 +29,11 @@ async function importCsv() {
 
   const content = fs.readFileSync(filePath, 'utf-8');
   const lines = content.split('\n').filter(l => l.trim() !== '');
+<<<<<<< HEAD
   
+=======
+
+>>>>>>> 96d80c1 (Updated)
   // Skip header line
   const dataLines = lines.slice(1);
 
@@ -61,8 +65,13 @@ async function importCsv() {
 
     // Reset order if module changes
     if (String(mod._id) !== String(lastModuleId)) {
+<<<<<<< HEAD
         currentOrder = 1;
         lastModuleId = mod._id;
+=======
+      currentOrder = 1;
+      lastModuleId = mod._id;
+>>>>>>> 96d80c1 (Updated)
     }
 
     // 2. Prepare Item
@@ -77,6 +86,7 @@ async function importCsv() {
     };
 
     if (type === 'comic' || type === 'statement') {
+<<<<<<< HEAD
         itemDoc.text = textOrQuestion;
     } else if (['multiple-choice', 'fill-in-the-blank', 'rearrange'].includes(type)) {
         itemDoc.question = textOrQuestion;
@@ -85,6 +95,16 @@ async function importCsv() {
             itemDoc.options = options;
             if (type === 'rearrange') itemDoc.words = options;
         }
+=======
+      itemDoc.text = textOrQuestion;
+    } else if (['multiple-choice', 'fill-in-the-blank', 'rearrange'].includes(type)) {
+      itemDoc.question = textOrQuestion;
+      itemDoc.answer = answer;
+      if (options.length > 0) {
+        itemDoc.options = options;
+        if (type === 'rearrange') itemDoc.words = options;
+      }
+>>>>>>> 96d80c1 (Updated)
     }
 
     await CurriculumItem.create(itemDoc);
