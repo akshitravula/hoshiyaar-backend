@@ -34,50 +34,10 @@ const app = express();
 // CORS CONFIGURATION - UPDATED WITH VERCEL
 // ============================================
 const corsOptions = {
-  origin: function (origin, callback) {
-    const allowedOrigins = [
-      // Production domains
-      'https://www.hoshiyaar.info',
-      'https://hoshiyaar.info',
-      'https://hoshiyaar-frontend.vercel.app',
-      'https://hoshiyaar-frontend-1.onrender.com',
-      'http://localhost',        // Required for Capacitor Android (HTTP)
-      'https://localhost',       // Required for Capacitor Android (HTTPS)
-      'capacitor://localhost',  // Required for Capacitor iOS
-      'https://hoshiyaar-backend-production.up.railway.app', // Backend its own domain
-
-      // Local development
-      'http://localhost:5173',
-      'http://localhost:3000',
-      'http://192.168.1.11:3000',
-      'http://192.168.1.11:5173',
-
-      // Environment variable (for flexibility)
-      process.env.FRONTEND_URL
-    ].filter(Boolean);
-
-    // Allow requests with no origin (mobile apps, Postman, curl)
-    if (!origin) {
-      return callback(null, true);
-    }
-
-    // Allow ALL Vercel preview deployments (*.vercel.app)
-    if (origin.includes('vercel.app')) {
-      return callback(null, true);
-    }
-
-    // Allow defined origins
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-
-    // Log blocked origins for debugging
-    console.error(`❌ CORS blocked origin: ${origin}`);
-    return callback(new Error('Not allowed by CORS'), false);
-  },
-  credentials: true,
+  origin: '*',
+  credentials: false,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
   optionsSuccessStatus: 200
 };
 
