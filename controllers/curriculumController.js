@@ -181,23 +181,25 @@ export const importCurriculum = async (req, res) => {
       const processedIds = [];
       for (const c of (lesson.concepts || [])) {
         order += 1;
-        const base = { moduleId: module._id, order, imageUrl: c.imageUrl || c.image || undefined, images: Array.isArray(c.images) ? c.images.filter(Boolean) : undefined };
+        const base = { moduleId: module._id, order, imageUrl: c.imageUrl || c.image || undefined, images: Array.isArray(c.images) ? c.images.filter(Boolean) : [] };
 
         const rawType = String(c.type || '').toLowerCase();
         // Prioritize explicit type field - if type is explicitly set, use it
         // Otherwise, infer from data structure
         const hasExplicitType = rawType && rawType !== 'undefined' && rawType !== 'null';
-        
+
         let isMCQ = false;
         let isFIB = false;
         let isRearrange = false;
         let isStatement = false;
-        
+        let isComic = false;
+
         if (hasExplicitType) {
           // Explicit type takes precedence
           isMCQ = rawType === 'multiple-choice' || rawType === 'mcq';
           isFIB = rawType === 'fill-in-the-blank' || rawType === 'fillups' || rawType === 'fill-in';
           isRearrange = rawType === 'rearrange';
+          isComic = rawType === 'comic';
           isStatement = rawType === 'statement' || rawType === 'concept' || rawType === 'text';
         } else {
           // Infer from data structure only if no explicit type
@@ -208,7 +210,11 @@ export const importCurriculum = async (req, res) => {
         }
 
         const updateData = { ...base };
-        if (isRearrange) {
+        if (isComic) {
+          const comicImages = Array.isArray(c.images) ? c.images.filter(Boolean) : [];
+          const comicImageUrl = c.imageUrl || c.image || undefined;
+          Object.assign(updateData, { type: 'comic', images: comicImages, imageUrl: comicImageUrl });
+        } else if (isRearrange) {
           const words = Array.isArray(c.words) ? c.words : (Array.isArray(c.options) ? c.options : []);
           Object.assign(updateData, { type: 'rearrange', question: c.question || '', words, options: words, answer: c.answer });
         } else if (isMCQ) {
@@ -240,6 +246,7 @@ export const importCurriculum = async (req, res) => {
           totalItems += 1;
           createdForThisLesson += 1;
         } catch (_e) {
+          console.error('[importCurriculum] Failed to save item:', JSON.stringify(updateData), 'Error:', _e.message);
           skippedItems += 1;
         }
       }
@@ -263,7 +270,7 @@ export const listChapters = async (req, res) => {
   try {
     const { board = 'CBSE', subject = 'Science', classTitle, userId } = req.query;
     console.log(`[Curriculum] listChapters called with:`, { board, subject, classTitle, userId });
-    
+
     if (userId) {
       const u = await User.findById(userId).select('subjectId');
       if (u && u.subjectId) {
@@ -272,7 +279,7 @@ export const listChapters = async (req, res) => {
         return res.json(chapters);
       }
     }
-    
+
     // Find board
     const b = await Board.findOne({ name: board });
     if (!b) {
@@ -280,7 +287,7 @@ export const listChapters = async (req, res) => {
       return res.json([]);
     }
     console.log(`[Curriculum] Found board:`, b.name);
-    
+
     // Find class if specified
     let cls;
     if (classTitle) {
@@ -291,36 +298,36 @@ export const listChapters = async (req, res) => {
       }
       console.log(`[Curriculum] Found class:`, cls.name);
     }
-    
+
     // Find subject with more flexible matching
-    let s = await Subject.findOne({ 
-      boardId: b._id, 
-      name: subject, 
-      ...(cls ? { classId: cls._id } : {}) 
+    let s = await Subject.findOne({
+      boardId: b._id,
+      name: subject,
+      ...(cls ? { classId: cls._id } : {})
     });
-    
+
     // If not found, try without class constraint
     if (!s && cls) {
       s = await Subject.findOne({ boardId: b._id, name: subject });
       console.log(`[Curriculum] Subject found without class constraint:`, s ? s.name : 'none');
     }
-    
+
     // If still not found, try case-insensitive search
     if (!s) {
-      s = await Subject.findOne({ 
-        boardId: b._id, 
+      s = await Subject.findOne({
+        boardId: b._id,
         name: { $regex: new RegExp(`^${subject}$`, 'i') },
-        ...(cls ? { classId: cls._id } : {}) 
+        ...(cls ? { classId: cls._id } : {})
       });
       console.log(`[Curriculum] Subject found with case-insensitive search:`, s ? s.name : 'none');
     }
-    
+
     if (!s) {
       console.log(`[Curriculum] Subject '${subject}' not found for board '${board}' and class '${classTitle || 'any'}'`);
       // Return empty array instead of error
       return res.json([]);
     }
-    
+
     console.log(`[Curriculum] Found subject:`, s.name);
     const chapters = await Chapter.find({ subjectId: s._id }).sort({ order: 1 });
     console.log(`[Curriculum] Found ${chapters.length} chapters for subject`);
@@ -336,7 +343,7 @@ export const listChapters = async (req, res) => {
 export const seedBasicData = async (req, res) => {
   try {
     console.log('[Curriculum] Seeding basic data...');
-    
+
     // Create board
     const board = await Board.findOneAndUpdate(
       { name: 'CBSE' },
@@ -344,7 +351,7 @@ export const seedBasicData = async (req, res) => {
       { upsert: true, new: true }
     );
     console.log('[Curriculum] Board created/found:', board.name);
-    
+
     // Create class
     const classLevel = await ClassLevel.findOneAndUpdate(
       { boardId: board._id, name: '5' },
@@ -352,7 +359,7 @@ export const seedBasicData = async (req, res) => {
       { upsert: true, new: true }
     );
     console.log('[Curriculum] Class created/found:', classLevel.name);
-    
+
     // Create subject
     const subject = await Subject.findOneAndUpdate(
       { boardId: board._id, classId: classLevel._id, name: 'Science' },
@@ -360,7 +367,7 @@ export const seedBasicData = async (req, res) => {
       { upsert: true, new: true }
     );
     console.log('[Curriculum] Subject created/found:', subject.name);
-    
+
     // Create chapter
     const chapter = await Chapter.findOneAndUpdate(
       { subjectId: subject._id, title: 'Temperature And Thermometer' },
@@ -368,7 +375,7 @@ export const seedBasicData = async (req, res) => {
       { upsert: true, new: true }
     );
     console.log('[Curriculum] Chapter created/found:', chapter.title);
-    
+
     // Create unit
     const unit = await Unit.findOneAndUpdate(
       { chapterId: chapter._id, title: 'Unit 1' },
@@ -376,14 +383,14 @@ export const seedBasicData = async (req, res) => {
       { upsert: true, new: true }
     );
     console.log('[Curriculum] Unit created/found:', unit.title);
-    
+
     // Create modules
     const modules = [
       { title: 'Introduction to Temperature', order: 1 },
       { title: 'What is a Thermometer?', order: 2 },
       { title: 'Types of Thermometers', order: 3 }
     ];
-    
+
     const createdModules = [];
     for (const moduleData of modules) {
       const module = await Module.findOneAndUpdate(
@@ -394,7 +401,7 @@ export const seedBasicData = async (req, res) => {
       createdModules.push(module);
     }
     console.log('[Curriculum] Created modules:', createdModules.length);
-    
+
     res.json({
       message: 'Basic data seeded successfully',
       board: board.name,

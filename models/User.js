@@ -4,9 +4,10 @@ const userSchema = mongoose.Schema(
   {
     username: {
       type: String,
-      required: true,
+      required: false, // Changed from true to support guest
       unique: true,
       trim: true,
+      sparse: true // Ensure unique check ignores nulls
     },
     name: {
       type: String,
@@ -21,11 +22,13 @@ const userSchema = mongoose.Schema(
     },
     age: {
       type: Number,
-      required: true,
+      required: false, // Changed from true
+      default: null
     },
     dateOfBirth: {
       type: Date,
-      required: true,
+      required: false, // Changed from true
+      default: null
     },
     classLevel: {
       type: String,
@@ -102,6 +105,11 @@ const userSchema = mongoose.Schema(
     timestamps: true,
   }
 );
+
+// Metadata for anonymous users
+userSchema.add({
+  isGuest: { type: Boolean, default: false },
+});
 
 // Add points fields after schema definition for clarity
 userSchema.add({
