@@ -58,12 +58,13 @@ async function importDiversityCsv() {
   const content = fs.readFileSync(filePath, 'utf-8');
   const lines = content.split(/\r?\n/).filter(l => l.trim() !== '');
 
-  // Columns: Class_title,Board_title,Subject,Chapter_title,Unit_title,lesson_title,type,concept/statement,question,Options,answer,Revise?,Images 1,Images 2,Images 3
+  // Columns: Class_title,Board_title,Subject,Chapter_title,Unit_title,lesson_title,type,concept/statement,question,Options,answer,Revise?,Difficult,Images 1,Images 2,Images 3
   const dataLines = lines.slice(1);
 
   let totalImported = 0;
   let currentOrder = 1;
   let lastModuleId = null;
+  let difficultBuffer = [];
 
   for (let i = 0; i < dataLines.length; i++) {
     const line = dataLines[i];
@@ -85,6 +86,7 @@ async function importDiversityCsv() {
       optionsStr,
       answerText,
       revise,
+      difficult,
       img1,
       img2,
       img3
@@ -133,15 +135,39 @@ async function importDiversityCsv() {
 
     // Module (Mapping to lesson_title)
     let mod = await Module.findOne({ title: lessonTitle, unitId: unit._id });
+    const isDifficultModule = lessonTitle.toLowerCase().includes('difficult');
+    
     if (!mod) {
-      mod = await Module.create({ title: lessonTitle, unitId: unit._id, chapterId: chapter._id, order: 1 });
+      mod = await Module.create({ 
+        title: lessonTitle, 
+        unitId: unit._id, 
+        chapterId: chapter._id, 
+        order: 1,
+        isDifficult: isDifficultModule
+      });
       console.log(`Created Module: ${lessonTitle}`);
+    } else if (isDifficultModule && !mod.isDifficult) {
+        mod.isDifficult = true;
+        await mod.save();
     }
 
     // Reset order if module changes
     if (String(mod._id) !== String(lastModuleId)) {
       currentOrder = 1;
       lastModuleId = mod._id;
+      
+      if (isDifficultModule && difficultBuffer.length > 0) {
+          console.log(`Injecting ${difficultBuffer.length} buffered difficult questions into "${lessonTitle}"...`);
+          for (const bufferedItem of difficultBuffer) {
+              await CurriculumItem.create({
+                  ...bufferedItem,
+                  moduleId: mod._id,
+                  order: currentOrder++
+              });
+              totalImported++;
+          }
+          difficultBuffer = [];
+      }
     }
 
     // 2. Prepare Item
@@ -184,6 +210,12 @@ async function importDiversityCsv() {
     try {
       await CurriculumItem.create(itemDoc);
       totalImported++;
+      
+      if (difficult && difficult.trim().toLowerCase() === 'y') {
+          const { moduleId: _, order: __, ...bufferedDoc } = itemDoc;
+          difficultBuffer.push(bufferedDoc);
+      }
+
       if (totalImported % 50 === 0) console.log(`Imported ${totalImported} items...`);
     } catch (err) {
       console.error(`Error creating item at line ${i + 2}:`, err.message);

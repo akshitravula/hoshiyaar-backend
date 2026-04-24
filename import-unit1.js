@@ -12,7 +12,7 @@ import CurriculumItem from './models/CurriculumItem.js';
 dotenv.config();
 
 const CSV_PATHS = [
-  'D:\\Measurements and Motions Unit 2.csv'
+  'D:\\Measurements and Motions Unit 1.csv'
 ];
 
 function parseCSV(content) {
@@ -86,8 +86,8 @@ async function run() {
     }
   }
 
-  // STEP 1: DELETE ALL DATA FOR UNIT 2
-  const UNIT_TITLES = ['Unit 2: Motion Around Us'];
+  // STEP 1: DELETE ALL DATA FOR UNIT 1
+  const UNIT_TITLES = ['Unit 1: Measurements and Measuring Tools'];
   const CHAPTER_TITLE = 'Chapter 1: Measurement and motion';
 
   console.log(`\n🗑️ Deleting current data for Unit: ${UNIT_TITLES[0]} ...\n`);
@@ -182,7 +182,7 @@ async function run() {
 
         let unit = await Unit.findOne({ title: unitTitle, chapterId: chapter._id });
         if (!unit) {
-          unit = await Unit.create({ title: unitTitle, chapterId: chapter._id, order: 2 }); // Order 2 for unit 2 logically
+          unit = await Unit.create({ title: unitTitle, chapterId: chapter._id, order: 1 }); // Order 1 for unit 1 logically
         }
 
         let mod = await Module.findOne({ title: lessonTitle, unitId: unit._id });
@@ -252,7 +252,7 @@ async function run() {
     }
   }
 
-  console.log(`\n✅ Unit 2 Import complete! Total items imported: ${totalImported}`);
+  console.log(`\n✅ Unit 1 Import complete! Total items imported: ${totalImported}`);
   await mongoose.disconnect();
 }
 

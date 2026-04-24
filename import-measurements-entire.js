@@ -12,6 +12,7 @@ import CurriculumItem from './models/CurriculumItem.js';
 dotenv.config();
 
 const CSV_PATHS = [
+  'D:\\Measurements and Motions Unit 1.csv',
   'D:\\Measurements and Motions Unit 2.csv'
 ];
 
@@ -86,11 +87,11 @@ async function run() {
     }
   }
 
-  // STEP 1: DELETE ALL DATA FOR UNIT 2
-  const UNIT_TITLES = ['Unit 2: Motion Around Us'];
+  // STEP 1: DELETE ALL DATA FOR THE TWO UNITS.
+  const UNIT_TITLES = ['Unit 1: Measurements and Measuring Tools', 'Unit 2: Motion Around Us'];
   const CHAPTER_TITLE = 'Chapter 1: Measurement and motion';
 
-  console.log(`\n🗑️ Deleting current data for Unit: ${UNIT_TITLES[0]} ...\n`);
+  console.log(`\n🗑️ Deleting data for Units: ${UNIT_TITLES.join(', ')} ...\n`);
   const chapters = await Chapter.find({ title: CHAPTER_TITLE });
   
   for (const chapter of chapters) {
@@ -140,6 +141,7 @@ async function run() {
     let currentItemOrder = 1;
     let currentModuleOrder = 1;
     let lastModuleId = null;
+    let difficultBuffer = []; // Buffer to hold questions marked as difficult
 
     for (let i = 0; i < dataRows.length; i++) {
         const columns = dataRows[i];
@@ -156,7 +158,8 @@ async function run() {
           questionText,
           optionsStr,
           answerText,
-          , // revise (unused)
+          reviseValue,
+          difficultValue, // Y/N for difficult module
           img1,
           img2,
           img3
@@ -182,18 +185,43 @@ async function run() {
 
         let unit = await Unit.findOne({ title: unitTitle, chapterId: chapter._id });
         if (!unit) {
-          unit = await Unit.create({ title: unitTitle, chapterId: chapter._id, order: 2 }); // Order 2 for unit 2 logically
+          unit = await Unit.create({ title: unitTitle, chapterId: chapter._id, order: 1 });
         }
 
         let mod = await Module.findOne({ title: lessonTitle, unitId: unit._id });
+        const isDifficultModule = lessonTitle.toLowerCase().includes('difficult');
+        
         if (!mod) {
-          mod = await Module.create({ title: lessonTitle, unitId: unit._id, chapterId: chapter._id, order: currentModuleOrder++ });
+          mod = await Module.create({ 
+            title: lessonTitle, 
+            unitId: unit._id, 
+            chapterId: chapter._id, 
+            order: currentModuleOrder++,
+            isDifficult: isDifficultModule
+          });
           console.log(`  📄 Created Module with precise order [${mod.order}]: ${lessonTitle}`);
+        } else if (isDifficultModule && !mod.isDifficult) {
+          mod.isDifficult = true;
+          await mod.save();
         }
 
         if (String(mod._id) !== String(lastModuleId)) {
           currentItemOrder = 1;
           lastModuleId = mod._id;
+          
+          // If this is a new module AND it is a difficult module, flush the buffer
+          if (isDifficultModule && difficultBuffer.length > 0) {
+            console.log(`    ⭐ Injecting ${difficultBuffer.length} buffered difficult questions into "${lessonTitle}"...`);
+            for (const bufferedItem of difficultBuffer) {
+              await CurriculumItem.create({
+                ...bufferedItem,
+                moduleId: mod._id,
+                order: currentItemOrder++
+              });
+              totalImported++;
+            }
+            difficultBuffer = []; // Clear the buffer after flushing
+          }
         }
 
         const targetType = typeMapping[typeStr.toLowerCase().trim()];
@@ -249,10 +277,17 @@ async function run() {
 
         await CurriculumItem.create(itemDoc);
         totalImported++;
+
+        // If the difficult column has 'Y' or 'y', add this item to the difficult buffer
+        if (difficultValue && difficultValue.trim().toLowerCase() === 'y') {
+          // Clone the object but omit moduleId and order, so these will be generated later based on the difficult module
+          const { moduleId: _, order: __, ...bufferedDoc } = itemDoc;
+          difficultBuffer.push(bufferedDoc);
+        }
     }
   }
 
-  console.log(`\n✅ Unit 2 Import complete! Total items imported: ${totalImported}`);
+  console.log(`\n✅ Import complete! Total items imported: ${totalImported}`);
   await mongoose.disconnect();
 }
 

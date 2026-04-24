@@ -6,7 +6,9 @@ const ModuleSchema = new Schema({
   chapterId: { type: Schema.Types.ObjectId, ref: 'Chapter', required: true },
   unitId: { type: Schema.Types.ObjectId, ref: 'Unit' },
   title: { type: String, required: true },
-  order: { type: Number, default: 1 },
+  order: { type: Number, default: 1 }, // Supports fractional values for easy insertion (e.g., 1.5)
+  isDifficult: { type: Boolean, default: false },
+  isDescriptive: { type: Boolean, default: false },
 }, { timestamps: true });
 
 ModuleSchema.index({ chapterId: 1, title: 1 });

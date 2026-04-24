@@ -8,11 +8,13 @@ import CurriculumItem from '../models/CurriculumItem.js';
 import Unit from '../models/Unit.js';
 
 // GET /api/curriculum/boards
-export const listBoards = async (_req, res) => {
+export const listBoards = async (req, res) => {
   try {
     const boards = await Board.find({}).sort({ name: 1 });
+    console.log(`[Diagnostic] listBoards called. Found ${boards.length} boards. Requested by: ${req.ip}`);
     return res.json(boards);
   } catch (err) {
+    console.error('[Diagnostic] listBoards error:', err);
     return res.status(500).json({ message: 'Server Error' });
   }
 };
@@ -130,7 +132,10 @@ export const importCurriculum = async (req, res) => {
     // APPEND/UPSERT: keep existing modules; upsert one per lesson by title.
     const existingModules = await Module.find({ chapterId: chapter._id }).sort({ order: 1 });
     const titleToModule = new Map(existingModules.map(m => [String(m.title).trim().toLowerCase(), m]));
-    let nextOrder = existingModules.length;
+    
+    // Use a gap-based ordering system (e.g., increments of 1024) to allow "in-between" insertions later.
+    const maxOrderMod = existingModules.length > 0 ? Math.max(...existingModules.map(m => m.order || 0)) : 0;
+    let nextOrder = Math.ceil(maxOrderMod / 1024 + 1) * 1024;
 
     // For each lesson in payload, create-or-replace a module under the chapter
     let totalItems = 0;
@@ -165,8 +170,15 @@ export const importCurriculum = async (req, res) => {
         const key = String(lesson.lesson_title || '').trim().toLowerCase();
         module = titleToModule.get(key);
         if (!module) {
-          nextOrder += 1;
-          module = await Module.create({ chapterId: chapter._id, unitId: unit._id, title: lesson.lesson_title, order: nextOrder });
+          // If the payload specifies an order, use it; otherwise use the next gap-based order
+          const moduleOrder = lesson.order || nextOrder;
+          module = await Module.create({ 
+            chapterId: chapter._id, 
+            unitId: unit._id, 
+            title: lesson.lesson_title, 
+            order: moduleOrder 
+          });
+          if (!lesson.order) nextOrder += 1024;
           titleToModule.set(key, module);
         }
       }
@@ -176,11 +188,18 @@ export const importCurriculum = async (req, res) => {
         await CurriculumItem.deleteMany({ moduleId: module._id });
       }
 
-      let order = 0;
+      // Get existing items to determine next order gap
+      const existingItems = await CurriculumItem.find({ moduleId: module._id }).sort({ order: 1 });
+      const maxOrderItem = existingItems.length > 0 ? Math.max(...existingItems.map(i => i.order || 0)) : 0;
+      let currentItemOrder = Math.ceil(maxOrderItem / 1024 + 1) * 1024;
+
       let createdForThisLesson = 0;
       const processedIds = [];
       for (const c of (lesson.concepts || [])) {
-        order += 1;
+        // Use provided order if available (for explicit "in-between" insertion), otherwise append with gap
+        const order = c.order || currentItemOrder;
+        if (!c.order) currentItemOrder += 1024;
+        
         const base = { moduleId: module._id, order, imageUrl: c.imageUrl || c.image || undefined, images: Array.isArray(c.images) ? c.images.filter(Boolean) : [] };
 
         const rawType = String(c.type || '').toLowerCase();
@@ -193,6 +212,7 @@ export const importCurriculum = async (req, res) => {
         let isRearrange = false;
         let isStatement = false;
         let isComic = false;
+        let isDescriptive = false;
 
         if (hasExplicitType) {
           // Explicit type takes precedence
@@ -200,13 +220,15 @@ export const importCurriculum = async (req, res) => {
           isFIB = rawType === 'fill-in-the-blank' || rawType === 'fillups' || rawType === 'fill-in';
           isRearrange = rawType === 'rearrange';
           isComic = rawType === 'comic';
+          isDescriptive = rawType === 'descriptive' || rawType === 'subjective';
           isStatement = rawType === 'statement' || rawType === 'concept' || rawType === 'text';
         } else {
           // Infer from data structure only if no explicit type
           isMCQ = Array.isArray(c.options) && c.question && !Array.isArray(c.words);
           isFIB = c.question && !Array.isArray(c.options) && typeof c.answer !== 'undefined' && !Array.isArray(c.words);
           isRearrange = Array.isArray(c.words);
-          isStatement = !isMCQ && !isFIB && !isRearrange && (c.text || c.content);
+          isDescriptive = c.question && Array.isArray(c.keywords);
+          isStatement = !isMCQ && !isFIB && !isRearrange && !isDescriptive && (c.text || c.content);
         }
 
         const updateData = { ...base };
@@ -221,6 +243,8 @@ export const importCurriculum = async (req, res) => {
           Object.assign(updateData, { type: 'multiple-choice', question: c.question || '', options: (c.options || []).filter(Boolean), answer: c.answer });
         } else if (isFIB) {
           Object.assign(updateData, { type: 'fill-in-the-blank', question: c.question || '', answer: c.answer });
+        } else if (isDescriptive) {
+          Object.assign(updateData, { type: 'descriptive', question: c.question || '', keywords: Array.isArray(c.keywords) ? c.keywords : (c.answer ? String(c.answer).split(',').map(s => s.trim()) : []), modelAnswers: Array.isArray(c.modelAnswers) ? c.modelAnswers.filter(Boolean) : [] });
         } else if (isStatement) {
           Object.assign(updateData, { type: 'statement', text: c.text || c.content || '' });
         } else {

@@ -2,8 +2,9 @@ import mongoose from 'mongoose';
 const { Schema } = mongoose;
 
 const lessonItemSchema = new Schema({
-  module: {
-    type: Number,
+  moduleId: {
+    type: Schema.Types.ObjectId,
+    ref: 'Module',
     required: true,
   },
 //   slide: {
@@ -22,7 +23,7 @@ const lessonItemSchema = new Schema({
   answer: { type: Schema.Types.Mixed, default: null },
   options: [String],
   words: [String],
-  order: { type: Number, default: 0 },
+  order: { type: Number, default: 0 }, // Supports fractional values
 });
 
 const LessonItem = mongoose.model('LessonItem', lessonItemSchema);

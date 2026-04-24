@@ -28,52 +28,49 @@ export const getLessonByModule = async (req, res) => {
 // @access  Public (consider protecting in production)
 export const importLessons = async (req, res) => {
   try {
-    const moduleNumber = parseInt(req.params.moduleNumber);
-    if (isNaN(moduleNumber)) {
-      return res.status(400).json({ message: 'Invalid module number' });
+    // Find the actual module ID if a number was provided (for backward compatibility or simplified routes)
+    // In a fully modular system, we should prefer passing 'moduleId' as an ObjectId string.
+    let targetModuleId = req.params.moduleId || req.params.moduleNumber;
+    
+    // Remove existing items for module if replace requested
+    if (payload.replace === true) {
+        await LessonItem.deleteMany({ moduleId: targetModuleId });
     }
-
-    const payload = req.body;
-    if (!payload || !Array.isArray(payload.lessons)) {
-      return res.status(400).json({ message: 'Invalid payload: expected lessons[]' });
-    }
-
-    // Remove existing items for module
-    await LessonItem.deleteMany({ module: moduleNumber });
 
     const docs = [];
-    let order = 0;
+    const existingItems = await LessonItem.find({ moduleId: targetModuleId }).sort({ order: 1 });
+    const maxOrder = existingItems.length > 0 ? Math.max(...existingItems.map(i => i.order || 0)) : 0;
+    let currentOrder = Math.ceil(maxOrder / 1024 + 1) * 1024;
+
     for (const lesson of payload.lessons) {
       const concepts = Array.isArray(lesson.concepts) ? lesson.concepts : [];
       for (const c of concepts) {
-        order += 1;
+        const order = c.order || currentOrder;
+        if (!c.order) currentOrder += 1024;
+
+        const baseDoc = {
+          moduleId: targetModuleId,
+          title: lesson.lesson_title || payload.module_title || undefined,
+          order,
+        };
+
         if (c.type === 'statement') {
-          docs.push({
-            module: moduleNumber,
-            type: 'statement',
-            title: lesson.lesson_title || payload.module_title || undefined,
-            text: c.text,
-            order,
-          });
+          docs.push({ ...baseDoc, type: 'statement', text: c.text });
         } else if (c.type === 'multiple-choice') {
           docs.push({
-            module: moduleNumber,
+            ...baseDoc,
             type: 'multiple-choice',
-            title: lesson.lesson_title || payload.module_title || undefined,
             question: c.question,
             options: c.options || [],
             answer: c.answer,
-            order,
           });
         } else if (c.type === 'rearrange') {
           docs.push({
-            module: moduleNumber,
+            ...baseDoc,
             type: 'rearrange',
-            title: lesson.lesson_title || payload.module_title || undefined,
             question: c.question,
             words: c.words || [],
             answer: c.answer,
-            order,
           });
         }
       }

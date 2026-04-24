@@ -94,6 +94,7 @@ export const registerUser = async (req, res) => {
         username: user.username,
         name: user.name,
         email: user.email,
+        role: user.role, // Added role to response
         age: user.age,
         dateOfBirth: user.dateOfBirth,
         classLevel: user.classLevel,

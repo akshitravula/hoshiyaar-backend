@@ -78,9 +78,12 @@ async function importCsv() {
     const options = optionsStr ? optionsStr.split('|').filter(Boolean) : [];
     const images = imagesStr ? imagesStr.split('|').filter(Boolean) : [];
 
+    const itemOrder = currentOrder;
+    currentOrder += 1024; // Use gaps of 1024 for easier "in-between" insertions
+
     const itemDoc = {
       moduleId: mod._id,
-      order: currentOrder++,
+      order: itemOrder,
       type: type.toLowerCase(), // 'comic', 'statement', 'multiple-choice', etc.
       images: images
     };

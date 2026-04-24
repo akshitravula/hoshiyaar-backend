@@ -12,6 +12,11 @@ const userSchema = mongoose.Schema(
     name: {
       type: String,
     },
+    role: {
+      type: String,
+      enum: ['student', 'master'],
+      default: 'student',
+    },
     // Email is optional now; login is done via username
     email: {
       type: String,
